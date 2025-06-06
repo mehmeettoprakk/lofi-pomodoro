@@ -9,12 +9,16 @@ interface MoodSelectorProps {
   moods: Mood[];
   onMoodChange: (url: string) => void;
   activeUrl: string;
+  isVideoEnabled: boolean;
+  onVideoToggle: () => void;
 }
 
 const MoodSelector = ({
   moods,
   onMoodChange,
   activeUrl,
+  isVideoEnabled,
+  onVideoToggle,
 }: MoodSelectorProps) => {
   return (
     <div className="w-full max-w-sm mx-auto text-center">
@@ -25,7 +29,12 @@ const MoodSelector = ({
         {moods.map((mood) => (
           <button
             key={mood.name}
-            onClick={() => onMoodChange(mood.url)}
+            onClick={() => {
+              onMoodChange(mood.url);
+              if (!isVideoEnabled) {
+                onVideoToggle();
+              }
+            }}
             className={`px-4 py-2 sm:px-5 rounded-full font-semibold text-xs sm:text-sm transition-all duration-300 shadow-md ${
               activeUrl === mood.url
                 ? "bg-white text-gray-900 scale-105"

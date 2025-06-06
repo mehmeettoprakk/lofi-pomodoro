@@ -8,26 +8,34 @@ import MoodSelector from "@/components/MoodSelector";
 import { Settings } from "lucide-react";
 import SettingsModal from "@/components/SettingsModal";
 import VolumeControl from "@/components/VolumeControl";
+import BackgroundVideo from "@/components/BackgroundVideo";
 
-// Updating the moods with a working ocean sound as requested.
+// Updating the moods with video modes
 const moods = [
   {
     name: "Ocean Waves",
     url: "https://soundbible.com/grab.php?id=1936&type=mp3",
+    videoMode: "waves" as const,
   },
   {
     name: "Rainy Day",
     url: "https://www.soundjay.com/nature/sounds/rain-07.mp3",
+    videoMode: "rain" as const,
   },
   {
     name: "Fireplace",
     url: "https://soundbible.com/grab.php?id=1543&type=mp3",
+    videoMode: "fireplace" as const,
   },
 ];
 
 export default function Home() {
   const [isActive, setIsActive] = useState(false);
   const [currentStreamUrl, setCurrentStreamUrl] = useState(moods[0].url);
+  const [currentVideoMode, setCurrentVideoMode] = useState<
+    "waves" | "rain" | "fireplace"
+  >(moods[0].videoMode);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
 
   // New state for features
   const [volume, setVolume] = useState(0.5); // Volume from 0 to 1
@@ -44,10 +52,19 @@ export default function Home() {
 
   const handleMoodChange = (url: string) => {
     setCurrentStreamUrl(url);
+    const selectedMood = moods.find((mood) => mood.url === url);
+    if (selectedMood) {
+      setCurrentVideoMode(selectedMood.videoMode);
+    }
   };
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen p-4">
+      <BackgroundVideo
+        mode={currentVideoMode}
+        isEnabled={isVideoEnabled}
+        onToggle={() => setIsVideoEnabled((prev) => !prev)}
+      />
       <div className="w-full max-w-sm mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -83,6 +100,8 @@ export default function Home() {
             moods={moods}
             onMoodChange={handleMoodChange}
             activeUrl={currentStreamUrl}
+            isVideoEnabled={isVideoEnabled}
+            onVideoToggle={() => setIsVideoEnabled(true)}
           />
           <VolumeControl volume={volume} onVolumeChange={setVolume} />
           <Player
