@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 
 interface PlayerProps {
   isActive: boolean;
@@ -10,42 +10,87 @@ interface PlayerProps {
 
 const Player = ({ isActive, streamUrl, volume }: PlayerProps) => {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [isUserInteracted, setIsUserInteracted] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
 
-  // A single, robust effect to manage the audio element's state.
+  // Kullanıcı etkileşimini yakala
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      setIsUserInteracted(true);
+      setAudioError(null);
+    };
+
+    // Sayfa genelinde click, touch veya keydown olaylarını dinle
+    document.addEventListener("click", handleUserInteraction);
+    document.addEventListener("touchstart", handleUserInteraction);
+    document.addEventListener("keydown", handleUserInteraction);
+
+    return () => {
+      document.removeEventListener("click", handleUserInteraction);
+      document.removeEventListener("touchstart", handleUserInteraction);
+      document.removeEventListener("keydown", handleUserInteraction);
+    };
+  }, []);
+
+  // Audio element'i yönet
   useEffect(() => {
     const audioElement = audioRef.current;
     if (!audioElement) return;
 
-    // Set the source programmatically to avoid race conditions.
-    // We only update if it's different to avoid re-loading the same track on simple play/pause.
+    // Source'u güncelle
     if (audioElement.src !== streamUrl) {
       audioElement.src = streamUrl;
-      audioElement.load(); // Explicitly tell the browser to load the new source.
+      audioElement.load();
     }
 
-    // Set the volume
+    // Volume'u ayarla
     audioElement.volume = volume;
 
-    // Handle the play/pause logic.
-    if (isActive) {
-      // The play() method returns a Promise. We should handle its potential rejection.
+    // Play/pause mantığı - sadece kullanıcı etkileşimi varsa
+    if (isActive && isUserInteracted) {
       const playPromise = audioElement.play();
+
       if (playPromise !== undefined) {
-        playPromise.catch((error) => {
-          console.error("Audio playback failed:", error);
-        });
+        playPromise
+          .then(() => {
+            setAudioError(null);
+          })
+          .catch((error) => {
+            console.warn("Ses çalınamadı:", error.message);
+            setAudioError("Ses çalınamadı. Sayfa ile etkileşime geçin.");
+          });
       }
-    } else {
+    } else if (!isActive) {
       audioElement.pause();
     }
-  }, [isActive, streamUrl, volume]); // Re-run this logic whenever the state, URL or volume changes.
+  }, [isActive, streamUrl, volume, isUserInteracted]);
 
   return (
-    <div className="mt-8">
-      {/* The src is not set here initially; the useEffect has full control. */}
-      <audio ref={audioRef} loop>
-        Your browser does not support the audio element.
+    <div className="mt-4">
+      <audio ref={audioRef} loop preload="metadata">
+        Tarayıcınız ses öğesini desteklemiyor.
       </audio>
+
+      {/* Kullanıcı etkileşimi gereksinimi uyarısı */}
+      {isActive && !isUserInteracted && (
+        <div className="text-xs text-yellow-300 text-center mt-2 p-2 bg-yellow-500/20 rounded">
+          🔊 Ses için sayfaya tıklayın
+        </div>
+      )}
+
+      {/* Ses hatası uyarısı */}
+      {audioError && (
+        <div className="text-xs text-red-300 text-center mt-2 p-2 bg-red-500/20 rounded">
+          {audioError}
+        </div>
+      )}
+
+      {/* Ses durumu göstergesi */}
+      {isActive && isUserInteracted && !audioError && (
+        <div className="text-xs text-green-300 text-center mt-2">
+          🎵 Müzik çalıyor
+        </div>
+      )}
     </div>
   );
 };
