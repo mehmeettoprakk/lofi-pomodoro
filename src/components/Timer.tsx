@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Play, Pause, RotateCcw } from "lucide-react";
 
 interface TimerProps {
   isActive: boolean;
   toggle: () => void;
   reset: () => void;
-  duration: number;
   minutes: number;
   seconds: number;
   isLoading: boolean;
@@ -17,7 +15,6 @@ const Timer = ({
   isActive,
   toggle,
   reset,
-  duration,
   minutes,
   seconds,
   isLoading,
