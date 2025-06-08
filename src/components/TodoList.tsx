@@ -9,22 +9,39 @@ import {
   deleteTodoTask,
   toggleTodoTask,
   TodoTask,
+  getCurrentUserId,
 } from "@/lib/firebase";
 
 const TodoList = () => {
   const [tasks, setTasks] = useState<TodoTask[]>([]);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [uidReady, setUidReady] = useState(false);
 
-  // Firebase'den task'ları dinle
+  // 🔐 UID gelene kadar bekle
   useEffect(() => {
+    const interval = setInterval(() => {
+      const uid = getCurrentUserId();
+      if (uid) {
+        setUidReady(true);
+        clearInterval(interval);
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // ✅ UID geldikten sonra görevleri dinle
+  useEffect(() => {
+    if (!uidReady) return;
+
     const unsubscribe = subscribeTodoTasks((updatedTasks) => {
       setTasks(updatedTasks);
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
-  }, []);
+    return () => unsubscribe?.();
+  }, [uidReady]);
 
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,14 +143,14 @@ const TodoList = () => {
                 {task.title}
               </span>
 
-              {/* Pomodoro sayısı (varsa) */}
+              {/* Pomodoro sayısı */}
               {(task.pomodoroCount || 0) > 0 && (
                 <span className="text-xs bg-white/20 text-white/70 px-2 py-1 rounded-full">
-                  🍅 {task.pomodoroCount || 0}
+                  🍅 {task.pomodoroCount}
                 </span>
               )}
 
-              {/* Silme butonu */}
+              {/* Silme */}
               <button
                 onClick={() => handleDeleteTask(task.id)}
                 className="flex-shrink-0 text-white/40 hover:text-red-400 transition-colors">

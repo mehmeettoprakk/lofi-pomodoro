@@ -11,11 +11,12 @@ import {
   updateDoc,
   query,
   orderBy,
+  where,
 } from "firebase/firestore";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
 
+// Firebase config
 const firebaseConfig = {
-  // Firebase projenizin konfigürasyon bilgilerini buraya ekleyin
-  // Bu bilgileri Firebase Console'dan alabilirsiniz
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -24,11 +25,38 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Firebase'i başlat
+// Firebase başlat
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+export const auth = getAuth(app);
 
-// Pomodoro Task interface'i
+// Kullanıcı kimliği
+let currentUserId: string | null = null;
+
+// Anonim giriş yap
+signInAnonymously(auth)
+  .then(() => {
+    console.log("Anonim kullanıcı girişi başarılı");
+  })
+  .catch((error) => {
+    console.error("Anonim giriş hatası:", error);
+  });
+
+// UID takibi
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    currentUserId = user.uid;
+    localStorage.setItem("firebaseAnonUid", currentUserId);
+  } else {
+    currentUserId = null;
+  }
+});
+
+export const getCurrentUserId = (): string | null => {
+  return currentUserId || localStorage.getItem("firebaseAnonUid");
+};
+
+// Tipler
 export interface PomodoroTask {
   id: string;
   remainingMinutes: number;
@@ -41,7 +69,6 @@ export interface PomodoroTask {
   lastUpdated: number;
 }
 
-// Todo Task interface'i
 export interface TodoTask {
   id: string;
   title: string;
@@ -49,9 +76,10 @@ export interface TodoTask {
   createdAt: number;
   completedAt?: number;
   pomodoroCount?: number;
+  userId: string;
 }
 
-// Pomodoro Task'ı Firebase'e kaydet
+// Pomodoro Task işlemleri
 export const saveTask = async (taskId: string, task: PomodoroTask) => {
   try {
     await setDoc(doc(db, "tasks", taskId), task);
@@ -60,44 +88,37 @@ export const saveTask = async (taskId: string, task: PomodoroTask) => {
   }
 };
 
-// Pomodoro Task'ı Firebase'den al
 export const getTask = async (taskId: string): Promise<PomodoroTask | null> => {
   try {
     const taskDoc = await getDoc(doc(db, "tasks", taskId));
-    if (taskDoc.exists()) {
-      return taskDoc.data() as PomodoroTask;
-    }
-    return null;
+    return taskDoc.exists() ? (taskDoc.data() as PomodoroTask) : null;
   } catch (error) {
     console.error("Task yüklenirken hata:", error);
     return null;
   }
 };
 
-// Pomodoro Task'ı gerçek zamanlı dinle
 export const subscribeToTask = (
   taskId: string,
   callback: (task: PomodoroTask | null) => void
 ) => {
   return onSnapshot(doc(db, "tasks", taskId), (doc) => {
-    if (doc.exists()) {
-      callback(doc.data() as PomodoroTask);
-    } else {
-      callback(null);
-    }
+    callback(doc.exists() ? (doc.data() as PomodoroTask) : null);
   });
 };
 
-// Todo Task CRUD işlemleri
-
-// Yeni todo task ekle
+// Todo Task ekle
 export const addTodoTask = async (title: string): Promise<string | null> => {
   try {
+    const userId = getCurrentUserId();
+    if (!userId) throw new Error("Kullanıcı kimliği alınamadı");
+
     const newTask: Omit<TodoTask, "id"> = {
       title,
       completed: false,
       createdAt: Date.now(),
       pomodoroCount: 0,
+      userId,
     };
 
     const docRef = await addDoc(collection(db, "todos"), newTask);
@@ -108,7 +129,7 @@ export const addTodoTask = async (title: string): Promise<string | null> => {
   }
 };
 
-// Todo task'ı güncelle
+// Todo Task güncelle
 export const updateTodoTask = async (
   taskId: string,
   updates: Partial<TodoTask>
@@ -120,7 +141,7 @@ export const updateTodoTask = async (
   }
 };
 
-// Todo task'ı sil
+// Todo Task sil
 export const deleteTodoTask = async (taskId: string) => {
   try {
     await deleteDoc(doc(db, "todos", taskId));
@@ -129,7 +150,7 @@ export const deleteTodoTask = async (taskId: string) => {
   }
 };
 
-// Todo task'ı tamamla/tamamlama
+// Todo tamamla / geri al
 export const toggleTodoTask = async (taskId: string, completed: boolean) => {
   try {
     const updates: Partial<TodoTask> = {
@@ -138,13 +159,23 @@ export const toggleTodoTask = async (taskId: string, completed: boolean) => {
     };
     await updateDoc(doc(db, "todos", taskId), updates);
   } catch (error) {
-    console.error("Todo durum değiştirme hatası:", error);
+    console.error("Tamamla durumu değiştirilemedi:", error);
   }
 };
 
-// Todo task'ları gerçek zamanlı dinle
+// Sadece kullanıcının görevlerini getir
 export const subscribeTodoTasks = (callback: (tasks: TodoTask[]) => void) => {
-  const q = query(collection(db, "todos"), orderBy("createdAt", "desc"));
+  const userId = getCurrentUserId();
+  if (!userId) {
+    console.error("Kullanıcı kimliği alınamadı, görevler getirilemedi.");
+    return () => {};
+  }
+
+  const q = query(
+    collection(db, "todos"),
+    where("userId", "==", userId),
+    orderBy("createdAt", "desc")
+  );
 
   return onSnapshot(q, (snapshot) => {
     const tasks: TodoTask[] = [];
@@ -155,7 +186,7 @@ export const subscribeTodoTasks = (callback: (tasks: TodoTask[]) => void) => {
   });
 };
 
-// Benzersiz task ID oluştur (session-based)
+// Pomodoro görev kimliği
 export const getTaskId = () => {
   let taskId = localStorage.getItem("pomodoroTaskId");
   if (!taskId) {
