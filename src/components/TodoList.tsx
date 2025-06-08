@@ -47,11 +47,24 @@ const TodoList = () => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
 
+    console.log("🔵 Görev eklemeye başlıyor:", newTaskTitle.trim());
+    console.log("🔵 Mevcut UID:", getCurrentUserId());
+    console.log("🔵 UID Ready durumu:", uidReady);
+
     try {
-      await addTodoTask(newTaskTitle.trim());
-      setNewTaskTitle("");
+      const result = await addTodoTask(newTaskTitle.trim());
+      console.log("✅ Görev ekleme sonucu:", result);
+      
+      if (result) {
+        setNewTaskTitle("");
+        console.log("✅ Input temizlendi");
+      } else {
+        console.error("❌ Görev eklendi ama ID döndürülmedi");
+        alert("Görev eklenirken bir sorun oluştu. Lütfen tekrar deneyin.");
+      }
     } catch (error) {
-      console.error("Task eklenirken hata:", error);
+      console.error("❌ Task eklenirken hata:", error);
+      alert(`Hata: ${error}`);
     }
   };
 
