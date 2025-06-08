@@ -6,6 +6,7 @@ interface TimerProps {
   isActive: boolean;
   toggle: () => void;
   reset: () => void;
+  duration: number;
   minutes: number;
   seconds: number;
   isLoading: boolean;
