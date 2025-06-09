@@ -1,4 +1,4 @@
-# 🌿 Pomodoro Mood Timer
+# 🌿 Pomodoro Focus
 
 A minimal, focused Pomodoro timer enhanced with ambient background sounds to match your mood.  
 Boost your productivity while staying relaxed.
@@ -29,8 +29,10 @@ Boost your productivity while staying relaxed.
 
 ## 🚀 Getting Started
 
+To run the project locally:
+
 ```bash
-git clone https://github.com/your-username/pomodoro-mood-timer.git
-cd pomodoro-mood-timer
+git clone https://github.com/mehmeettoprakk/lofi-pomodoro.git
+cd lofi-pomodoro
 npm install
 npm run dev
