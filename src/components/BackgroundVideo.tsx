@@ -61,7 +61,7 @@ export default function BackgroundVideo({
   const [isLoading, setIsLoading] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [videoError, setVideoError] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
+  //const [isVisible, setIsVisible] = useState(true);
 
   // Device info'yu bir kez hesapla
   useEffect(() => {
