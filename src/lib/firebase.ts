@@ -35,7 +35,7 @@ let currentUserId: string | null = null;
 
 // Anonim giriş yap
 signInAnonymously(auth)
-  .then((userCredential) => {
+  .then(() => {
     // Production'da log kaldırıldı
   })
   .catch((error) => {
