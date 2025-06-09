@@ -1,28 +1,21 @@
 "use client";
 
-import { X, Video, VideoOff } from "lucide-react";
+import { X } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface SettingsModalProps {
   onClose: () => void;
   duration: number;
   onDurationChange: (duration: number) => void;
-  isVideoEnabled?: boolean;
-  onVideoToggle?: () => void;
 }
 
 // Zaman seçenekleri (dakika)
 const timeOptions = [5, 10, 15, 20, 25, 30, 35, 40, 45];
 
-// Mobil cihaz kontrolü
-const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
-
 const SettingsModal = ({
   onClose,
   duration,
   onDurationChange,
-  isVideoEnabled = false,
-  onVideoToggle,
 }: SettingsModalProps) => {
   return (
     <div
@@ -37,26 +30,11 @@ const SettingsModal = ({
         onClick={(e: React.MouseEvent) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-lg font-bold text-white">Ayarlar</h2>
-          <div className="flex items-center space-x-2">
-            {/* Mobilde video toggle butonu */}
-            {isMobile && onVideoToggle && (
-              <button
-                onClick={onVideoToggle}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  isVideoEnabled
-                    ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                    : "bg-green-500/20 text-green-400 hover:bg-green-500/30"
-                } border border-current/20`}
-                title={isVideoEnabled ? "Videoyu Kapat" : "Videoyu Aç"}>
-                {isVideoEnabled ? <VideoOff size={16} /> : <Video size={16} />}
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="text-white/70 hover:text-white transition-colors">
-              <X size={24} />
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            className="text-white/70 hover:text-white transition-colors">
+            <X size={24} />
+          </button>
         </div>
 
         <div className="space-y-4">

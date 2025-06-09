@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Timer from "@/components/Timer";
 import Player from "@/components/Player";
 import MoodSelector from "@/components/MoodSelector";
-import { Settings } from "lucide-react";
+import { Settings, Video, VideoOff } from "lucide-react";
 import SettingsModal from "@/components/SettingsModal";
 import VolumeControl from "@/components/VolumeControl";
 import BackgroundVideo from "@/components/BackgroundVideo";
@@ -116,6 +116,19 @@ export default function Home() {
           className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-white">Pomodoro Focus</h1>
           <div className="flex items-center space-x-2">
+            {/* Mobilde video toggle butonu */}
+            {isMobile && (
+              <button
+                onClick={() => setIsVideoEnabled((prev) => !prev)}
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  isVideoEnabled
+                    ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                    : "bg-green-500/20 text-green-400 hover:bg-green-500/30"
+                } border border-current/20`}
+                title={isVideoEnabled ? "Videoyu Kapat" : "Videoyu Aç"}>
+                {isVideoEnabled ? <VideoOff size={20} /> : <Video size={20} />}
+              </button>
+            )}
             <button
               onClick={() => setIsSettingsOpen(true)}
               className="text-white/70 hover:text-white transition-colors">
@@ -167,8 +180,6 @@ export default function Home() {
           onClose={() => setIsSettingsOpen(false)}
           duration={duration}
           onDurationChange={handleDurationChange}
-          isVideoEnabled={isVideoEnabled}
-          onVideoToggle={() => setIsVideoEnabled((prev) => !prev)}
         />
       )}
     </main>
