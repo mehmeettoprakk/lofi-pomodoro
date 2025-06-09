@@ -135,16 +135,9 @@ export default function BackgroundVideo({
     }
   }, [isEnabled]);
 
-  // Mobilde video devre dışı bırakma seçeneği
+  // Mobilde video devre dışıysa sadece arka plan göster, buton yok
   if (isMobileDevice && !isEnabled) {
-    return (
-      <button
-        onClick={onToggle}
-        className="fixed bottom-20 right-4 z-50 p-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 text-white border border-white/20 shadow-lg"
-        title="Arka plan videosunu aç">
-        <Video className="w-5 h-5" />
-      </button>
-    );
+    return null;
   }
 
   return (

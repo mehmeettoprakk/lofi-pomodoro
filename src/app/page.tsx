@@ -167,6 +167,8 @@ export default function Home() {
           onClose={() => setIsSettingsOpen(false)}
           duration={duration}
           onDurationChange={handleDurationChange}
+          isVideoEnabled={isVideoEnabled}
+          onVideoToggle={() => setIsVideoEnabled((prev) => !prev)}
         />
       )}
     </main>
