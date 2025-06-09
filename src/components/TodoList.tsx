@@ -59,32 +59,26 @@ const TodoList = () => {
     if (!newTaskTitle.trim()) return;
 
     try {
-      const result = await addTodoTask(newTaskTitle.trim());
-
-      if (result) {
-        setNewTaskTitle("");
-      } else {
-        alert("Görev eklenirken bir sorun oluştu. Lütfen tekrar deneyin.");
-      }
-    } catch (error) {
-      console.error("❌ Task eklenirken hata:", error);
-      alert(`Hata: ${error}`);
+      await addTodoTask(newTaskTitle.trim());
+      setNewTaskTitle("");
+    } catch {
+      // Hata durumunda sessizce devam et
     }
   };
 
   const handleToggleTask = async (taskId: string, completed: boolean) => {
     try {
       await toggleTodoTask(taskId, !completed);
-    } catch (error) {
-      console.error("Task güncellenirken hata:", error);
+    } catch {
+      // Hata durumunda sessizce devam et
     }
   };
 
   const handleDeleteTask = async (taskId: string) => {
     try {
       await deleteTodoTask(taskId);
-    } catch (error) {
-      console.error("Task silinirken hata:", error);
+    } catch {
+      // Hata durumunda sessizce devam et
     }
   };
 

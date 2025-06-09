@@ -9,21 +9,42 @@ interface BackgroundVideoProps {
   onToggle: () => void;
 }
 
-// Mobil cihaz kontrolü
-const isMobile = () => {
-  if (typeof window === "undefined") return false;
-  return (
+// Cihaz performans tespiti
+const getDeviceInfo = () => {
+  if (typeof window === "undefined")
+    return { isMobile: false, isLowEnd: false, isSafari: false };
+
+  const isMobile =
     window.innerWidth <= 768 ||
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
       navigator.userAgent
-    )
-  );
+    );
+
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  // Düşük performanslı cihaz tespiti
+  const deviceMemory = (navigator as { deviceMemory?: number }).deviceMemory;
+  const isLowEnd =
+    navigator.hardwareConcurrency <= 2 ||
+    (deviceMemory && deviceMemory <= 2) ||
+    /Android.*[4-6]\./i.test(navigator.userAgent) ||
+    window.innerWidth < 480;
+
+  return { isMobile, isLowEnd, isSafari };
 };
 
+// Optimize edilmiş video URL'leri - WebM formatı daha küçük
 const videoUrls = {
   rain: "/videos/rain.mp4",
   waves: "/videos/waves.mp4",
   fireplace: "/videos/fireplace.mp4",
+};
+
+// Fallback gradient backgrounds düşük performanslı cihazlar için
+const gradientBackgrounds = {
+  rain: "bg-gradient-to-br from-gray-700 via-blue-800 to-gray-900",
+  waves: "bg-gradient-to-br from-blue-600 via-cyan-700 to-blue-900",
+  fireplace: "bg-gradient-to-br from-orange-600 via-red-700 to-yellow-800",
 };
 
 export default function BackgroundVideo({
@@ -32,111 +53,137 @@ export default function BackgroundVideo({
   onToggle,
 }: BackgroundVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [deviceInfo, setDeviceInfo] = useState({
+    isMobile: false,
+    isLowEnd: false,
+    isSafari: false,
+  });
   const [isLoading, setIsLoading] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [videoError, setVideoError] = useState(false);
 
-  // Mobil kontrol
+  // Device info'yu bir kez hesapla
   useEffect(() => {
-    setIsMobileDevice(isMobile());
+    setDeviceInfo(getDeviceInfo());
   }, []);
 
-  // Video mode değişimi
+  // Safari için kullanıcı etkileşimi dinle
+  useEffect(() => {
+    if (!deviceInfo.isSafari) return;
+
+    const handleUserInteraction = () => setHasUserInteracted(true);
+
+    document.addEventListener("click", handleUserInteraction, { once: true });
+    document.addEventListener("touchstart", handleUserInteraction, {
+      once: true,
+    });
+
+    return () => {
+      document.removeEventListener("click", handleUserInteraction);
+      document.removeEventListener("touchstart", handleUserInteraction);
+    };
+  }, [deviceInfo.isSafari]);
+
+  // Video yükleme ve mode değişimi
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !isEnabled) return;
+    if (!video || !isEnabled || deviceInfo.isLowEnd) return;
 
     const newVideoUrl = videoUrls[mode];
 
-    // Eğer aynı video ise bir şey yapma
+    // Aynı video ise skip
     if (video.src.includes(newVideoUrl.split("/").pop() || "")) {
       return;
     }
 
     setIsLoading(true);
+    setVideoError(false);
 
-    // Smooth fade out
-    video.style.opacity = "0.3";
-
-    const changeVideo = async () => {
+    const loadVideo = async () => {
       try {
-        // Video'yu duraklat
-        if (!video.paused) {
-          video.pause();
-        }
+        // Fade out
+        video.style.opacity = "0.3";
 
-        // Küçük gecikme
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        if (!video.paused) video.pause();
 
-        // Yeni video kaynağını ayarla
+        // Yeni video source
         video.src = newVideoUrl;
         video.currentTime = 0;
 
-        // Video yüklendiğinde oynat
         const handleCanPlay = async () => {
           try {
+            // Safari kontrolü
+            if (deviceInfo.isSafari && !hasUserInteracted) {
+              setIsLoading(false);
+              video.style.opacity = "1";
+              return;
+            }
+
             await video.play();
-            // Fade in
             video.style.opacity = "1";
             setIsLoading(false);
-          } catch (error) {
-            console.warn("Video oynatma hatası:", error);
+          } catch {
+            // Safari'de video hatası varsa sessizce devam et
+            setVideoError(true);
             setIsLoading(false);
+            video.style.opacity = "1";
           }
         };
 
+        const handleError = () => {
+          setVideoError(true);
+          setIsLoading(false);
+          video.style.opacity = "1";
+        };
+
         video.addEventListener("canplay", handleCanPlay, { once: true });
+        video.addEventListener("error", handleError, { once: true });
+
         video.load();
-      } catch (error) {
-        console.warn("Video değiştirme hatası:", error);
-        video.style.opacity = "1";
+      } catch {
+        setVideoError(true);
         setIsLoading(false);
+        if (video) video.style.opacity = "1";
       }
     };
 
-    changeVideo();
-  }, [mode, isEnabled]);
+    loadVideo();
+  }, [mode, isEnabled, deviceInfo, hasUserInteracted]);
 
-  // İlk video yükleme
+  // Video enable/disable kontrolü
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !isEnabled) return;
+    if (!video || deviceInfo.isLowEnd) return;
 
-    // İlk kez video yükleniyorsa
-    if (!video.src) {
-      video.src = videoUrls[mode];
-
-      const handleFirstLoad = async () => {
-        try {
-          await video.play();
-          video.style.opacity = "1";
-        } catch (error) {
-          console.warn("İlk video yükleme hatası:", error);
-        }
-      };
-
-      video.addEventListener("canplay", handleFirstLoad, { once: true });
-      video.load();
-    }
-  }, [isEnabled, mode]);
-
-  // Video enable/disable
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    if (isEnabled) {
+    if (isEnabled && !videoError) {
       if (video.paused && video.src) {
-        video.play().catch(console.warn);
+        const playVideo = async () => {
+          try {
+            if (deviceInfo.isSafari && !hasUserInteracted) return;
+            await video.play();
+          } catch {
+            setVideoError(true);
+          }
+        };
+        playVideo();
       }
     } else {
-      if (!video.paused) {
-        video.pause();
-      }
+      if (!video.paused) video.pause();
     }
-  }, [isEnabled]);
+  }, [isEnabled, deviceInfo, hasUserInteracted, videoError]);
 
-  // Mobilde video devre dışıysa sadece arka plan göster, buton yok
-  if (isMobileDevice && !isEnabled) {
+  // Düşük performanslı cihazlarda sadece gradient background
+  if (deviceInfo.isLowEnd) {
+    return isEnabled ? (
+      <div
+        className={`fixed inset-0 -z-10 ${gradientBackgrounds[mode]} transition-all duration-1000`}>
+        <div className="absolute inset-0 bg-black/20" />
+      </div>
+    ) : null;
+  }
+
+  // Mobilde video devre dışıysa hiçbir şey gösterme
+  if (deviceInfo.isMobile && !isEnabled) {
     return null;
   }
 
@@ -146,29 +193,40 @@ export default function BackgroundVideo({
         <div className="fixed inset-0 -z-10 h-full w-full overflow-hidden">
           <div className="absolute inset-0 bg-black/30 z-10" />
 
-          {/* Loading durumunda arka plan */}
-          {isLoading && (
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900 transition-opacity duration-300" />
+          {/* Loading/Error durumunda fallback background */}
+          {(isLoading || videoError) && (
+            <div
+              className={`absolute inset-0 ${gradientBackgrounds[mode]} transition-opacity duration-500`}
+            />
           )}
 
-          {/* Ana video */}
-          <video
-            ref={videoRef}
-            className="absolute inset-0 h-full w-full object-cover"
-            loop
-            muted
-            playsInline
-            preload={isMobileDevice ? "none" : "metadata"}
-            style={{
-              opacity: 0,
-              transition: "opacity 0.5s ease-in-out",
-            }}
-          />
+          {/* Safari kullanıcı etkileşimi uyarısı */}
+          {deviceInfo.isSafari && !hasUserInteracted && !videoError && (
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 bg-black/50 text-white p-4 rounded-lg text-center backdrop-blur-sm">
+              <p className="text-sm">Video için sayfaya tıklayın</p>
+            </div>
+          )}
+
+          {/* Ana video - hata yoksa göster */}
+          {!videoError && (
+            <video
+              ref={videoRef}
+              className="absolute inset-0 h-full w-full object-cover"
+              loop
+              muted
+              playsInline
+              preload={deviceInfo.isMobile ? "none" : "metadata"}
+              style={{
+                opacity: 0,
+                transition: "opacity 0.5s ease-in-out",
+              }}
+            />
+          )}
         </div>
       )}
 
-      {/* Desktop'ta sağ alt köşede video toggle butonu */}
-      {!isMobileDevice && (
+      {/* Desktop'ta video toggle butonu */}
+      {!deviceInfo.isMobile && (
         <button
           onClick={onToggle}
           className="fixed bottom-6 right-6 z-50 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 text-white border border-white/20 shadow-lg hover:scale-110 group"

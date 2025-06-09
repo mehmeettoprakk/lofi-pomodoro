@@ -74,8 +74,8 @@ const Player = ({ isActive, streamUrl, volume }: PlayerProps) => {
             await audioElement.play();
             setAudioError(null);
           }
-        } catch (error) {
-          console.warn("Ses çalınamadı:", error);
+        } catch {
+          // Hata durumunda sessizce devam et
           setAudioError("Ses çalınamadı. Sayfa ile etkileşime geçin.");
         }
       } else if (!isActive) {
@@ -116,14 +116,6 @@ const Player = ({ isActive, streamUrl, volume }: PlayerProps) => {
         controls={false}>
         Tarayıcınız ses öğesini desteklemiyor.
       </audio>
-
-      {/* Volume debug bilgisi (geliştirme için) */}
-      {process.env.NODE_ENV === "development" && (
-        <div className="text-xs text-white/50 text-center mt-1">
-          Volume: {Math.round(currentVolume * 100)}% | Muted:{" "}
-          {currentVolume === 0 ? "Yes" : "No"}
-        </div>
-      )}
 
       {/* Kullanıcı etkileşimi gereksinimi uyarısı */}
       {isActive && !isUserInteracted && (
