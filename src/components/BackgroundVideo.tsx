@@ -167,30 +167,21 @@ export default function BackgroundVideo({
         </div>
       )}
 
-      <button
-        onClick={onToggle}
-        className={`fixed z-50 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 text-white border border-white/20 shadow-lg hover:scale-110 group ${
-          isMobileDevice
-            ? "bottom-20 right-4 p-2" // Mobilde küçük, TodoList'in üstünde
-            : "bottom-6 right-6 p-3" // Desktop'ta normal boyut
-        }`}
-        title={
-          isEnabled ? "Arka plan videosunu kapat" : "Arka plan videosunu aç"
-        }>
-        {isEnabled ? (
-          <VideoOff
-            className={`group-hover:text-red-400 transition-colors ${
-              isMobileDevice ? "w-5 h-5" : "w-6 h-6"
-            }`}
-          />
-        ) : (
-          <Video
-            className={`group-hover:text-green-400 transition-colors ${
-              isMobileDevice ? "w-5 h-5" : "w-6 h-6"
-            }`}
-          />
-        )}
-      </button>
+      {/* Desktop'ta sağ alt köşede video toggle butonu */}
+      {!isMobileDevice && (
+        <button
+          onClick={onToggle}
+          className="fixed bottom-6 right-6 z-50 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 text-white border border-white/20 shadow-lg hover:scale-110 group"
+          title={
+            isEnabled ? "Arka plan videosunu kapat" : "Arka plan videosunu aç"
+          }>
+          {isEnabled ? (
+            <VideoOff className="w-6 h-6 group-hover:text-red-400 transition-colors" />
+          ) : (
+            <Video className="w-6 h-6 group-hover:text-green-400 transition-colors" />
+          )}
+        </button>
+      )}
     </>
   );
 }
