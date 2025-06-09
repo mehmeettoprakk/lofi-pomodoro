@@ -44,13 +44,13 @@ const getDeviceInfo = () => {
       navigator.userAgent
     );
 
-  // Düşük performanslı cihaz tespiti
+  // Düşük performanslı cihaz tespiti - sadece gerçekten eski cihazlar
   const deviceMemory = (navigator as { deviceMemory?: number }).deviceMemory;
   const isLowEnd =
-    navigator.hardwareConcurrency <= 2 ||
-    (deviceMemory && deviceMemory <= 2) ||
-    /Android.*[4-6]\./i.test(navigator.userAgent) ||
-    window.innerWidth < 480;
+    navigator.hardwareConcurrency <= 1 ||
+    (deviceMemory && deviceMemory <= 1) ||
+    /Android.*[4-5]\./i.test(navigator.userAgent) ||
+    window.innerWidth < 360;
 
   return { isMobile, isLowEnd };
 };
@@ -112,10 +112,8 @@ export default function Home() {
     "waves" | "rain" | "fireplace"
   >(moods[0].videoMode);
 
-  // Düşük performanslı cihazlarda video varsayılan kapalı
-  const [isVideoEnabled, setIsVideoEnabled] = useState(
-    !deviceInfo.isLowEnd && !deviceInfo.isMobile
-  );
+  // Düşük performanslı cihazlarda video varsayılan kapalı, mobilede kullanıcı seçimi
+  const [isVideoEnabled, setIsVideoEnabled] = useState(!deviceInfo.isLowEnd);
 
   // State'ler
   const [volume, setVolume] = useState(0.5);
@@ -141,15 +139,13 @@ export default function Home() {
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen p-4">
-      {/* Background Video - sadece yüksek performanslı cihazlarda, lazy loaded */}
+      {/* Background Video - düşük performanslı cihazlar hariç */}
       <Suspense fallback={null}>
-        {!deviceInfo.isLowEnd && (
-          <BackgroundVideo
-            mode={currentVideoMode}
-            isEnabled={isVideoEnabled}
-            onToggle={() => setIsVideoEnabled((prev) => !prev)}
-          />
-        )}
+        <BackgroundVideo
+          mode={currentVideoMode}
+          isEnabled={isVideoEnabled}
+          onToggle={() => setIsVideoEnabled((prev) => !prev)}
+        />
       </Suspense>
 
       {/* Ana container - tek sütun */}
@@ -166,7 +162,7 @@ export default function Home() {
             Pomodoro Focus
           </h1>
           <div className="flex items-center space-x-2">
-            {/* Video toggle - sadece desteklenen cihazlarda */}
+            {/* Video toggle - mobilde kullanıcı kontrolü için */}
             {!deviceInfo.isLowEnd && deviceInfo.isMobile && (
               <button
                 onClick={() => setIsVideoEnabled((prev) => !prev)}

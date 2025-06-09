@@ -22,25 +22,25 @@ const getDeviceInfo = () => {
 
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-  // Düşük performanslı cihaz tespiti
+  // Düşük performanslı cihaz tespiti - sadece gerçekten eski cihazlar
   const deviceMemory = (navigator as { deviceMemory?: number }).deviceMemory;
   const isLowEnd =
-    navigator.hardwareConcurrency <= 2 ||
-    (deviceMemory && deviceMemory <= 2) ||
-    /Android.*[4-6]\./i.test(navigator.userAgent) ||
-    window.innerWidth < 480;
+    navigator.hardwareConcurrency <= 1 ||
+    (deviceMemory && deviceMemory <= 1) ||
+    /Android.*[4-5]\./i.test(navigator.userAgent) ||
+    window.innerWidth < 360;
 
   return { isMobile, isLowEnd, isSafari };
 };
 
-// Optimize edilmiş video URL'leri - WebM formatı daha küçük
+// Optimize edilmiş video URL'leri
 const videoUrls = {
   rain: "/videos/rain.mp4",
   waves: "/videos/waves.mp4",
   fireplace: "/videos/fireplace.mp4",
 };
 
-// Fallback gradient backgrounds düşük performanslı cihazlar için
+// Fallback gradient backgrounds
 const gradientBackgrounds = {
   rain: "bg-gradient-to-br from-gray-700 via-blue-800 to-gray-900",
   waves: "bg-gradient-to-br from-blue-600 via-cyan-700 to-blue-900",
@@ -61,6 +61,7 @@ export default function BackgroundVideo({
   const [isLoading, setIsLoading] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
 
   // Device info'yu bir kez hesapla
   useEffect(() => {
@@ -84,10 +85,13 @@ export default function BackgroundVideo({
     };
   }, [deviceInfo.isSafari]);
 
-  // Video yükleme ve mode değişimi
+  // Video yükleme ve mode değişimi - mobilde daha dikkatli
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !isEnabled || deviceInfo.isLowEnd) return;
+    if (!video || !isEnabled) return;
+
+    // Düşük performanslı cihazlarda video yok
+    if (deviceInfo.isLowEnd) return;
 
     const newVideoUrl = videoUrls[mode];
 
@@ -123,7 +127,6 @@ export default function BackgroundVideo({
             video.style.opacity = "1";
             setIsLoading(false);
           } catch {
-            // Safari'de video hatası varsa sessizce devam et
             setVideoError(true);
             setIsLoading(false);
             video.style.opacity = "1";
@@ -147,7 +150,13 @@ export default function BackgroundVideo({
       }
     };
 
-    loadVideo();
+    // Mobilde biraz gecikme ekle (batarya tasarrufu)
+    if (deviceInfo.isMobile) {
+      const timer = setTimeout(loadVideo, 200);
+      return () => clearTimeout(timer);
+    } else {
+      loadVideo();
+    }
   }, [mode, isEnabled, deviceInfo, hasUserInteracted]);
 
   // Video enable/disable kontrolü
@@ -182,11 +191,6 @@ export default function BackgroundVideo({
     ) : null;
   }
 
-  // Mobilde video devre dışıysa hiçbir şey gösterme
-  if (deviceInfo.isMobile && !isEnabled) {
-    return null;
-  }
-
   return (
     <>
       {isEnabled && (
@@ -219,7 +223,17 @@ export default function BackgroundVideo({
               style={{
                 opacity: 0,
                 transition: "opacity 0.5s ease-in-out",
+                // Mobilde düşük kalite için filtreleme
+                ...(deviceInfo.isMobile && {
+                  filter: "contrast(0.9) brightness(0.95)",
+                }),
               }}
+              // Mobilde poster ve optimizasyonlar
+              {...(deviceInfo.isMobile && {
+                poster: `/posters/${mode}.jpg`,
+                // Mobilde daha düşük fps
+                controlsList: "nofullscreen nodownload noremoteplayback",
+              })}
             />
           )}
         </div>
