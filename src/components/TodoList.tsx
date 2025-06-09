@@ -18,17 +18,28 @@ const TodoList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [uidReady, setUidReady] = useState(false);
 
-  // 🔐 UID gelene kadar bekle
+  // 🔐 UID gelene kadar bekle - optimize edilmiş
   useEffect(() => {
-    const interval = setInterval(() => {
+    let mounted = true;
+
+    const checkUID = () => {
+      if (!mounted) return;
+
       const uid = getCurrentUserId();
       if (uid) {
         setUidReady(true);
-        clearInterval(interval);
+        return;
       }
-    }, 100);
 
-    return () => clearInterval(interval);
+      // UID yoksa 200ms sonra tekrar kontrol et
+      setTimeout(checkUID, 200);
+    };
+
+    checkUID();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // ✅ UID geldikten sonra görevleri dinle
@@ -47,19 +58,12 @@ const TodoList = () => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
 
-    console.log("🔵 Görev eklemeye başlıyor:", newTaskTitle.trim());
-    console.log("🔵 Mevcut UID:", getCurrentUserId());
-    console.log("🔵 UID Ready durumu:", uidReady);
-
     try {
       const result = await addTodoTask(newTaskTitle.trim());
-      console.log("✅ Görev ekleme sonucu:", result);
 
       if (result) {
         setNewTaskTitle("");
-        console.log("✅ Input temizlendi");
       } else {
-        console.error("❌ Görev eklendi ama ID döndürülmedi");
         alert("Görev eklenirken bir sorun oluştu. Lütfen tekrar deneyin.");
       }
     } catch (error) {

@@ -12,6 +12,7 @@ const Player = ({ isActive, streamUrl, volume }: PlayerProps) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isUserInteracted, setIsUserInteracted] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
+  const [currentVolume, setCurrentVolume] = useState(volume);
 
   // Kullanıcı etkileşimini yakala
   useEffect(() => {
@@ -32,44 +33,97 @@ const Player = ({ isActive, streamUrl, volume }: PlayerProps) => {
     };
   }, []);
 
-  // Audio element'i yönet
+  // Volume değişikliklerini ayrı effect'te yönet
   useEffect(() => {
     const audioElement = audioRef.current;
     if (!audioElement) return;
 
-    // Source'u güncelle
-    if (audioElement.src !== streamUrl) {
+    // Volume'u güncelle
+    audioElement.volume = volume;
+    setCurrentVolume(volume);
+
+    // Mobilde muted özelliğini de kontrol et
+    if (volume === 0) {
+      audioElement.muted = true;
+    } else {
+      audioElement.muted = false;
+    }
+  }, [volume]);
+
+  // Audio source ve play/pause kontrolü
+  useEffect(() => {
+    const audioElement = audioRef.current;
+    if (!audioElement) return;
+
+    // Source'u güncelle - sadece farklı ise
+    const currentSrc = audioElement.src;
+    if (!currentSrc.includes(streamUrl.split("/").pop() || "")) {
       audioElement.src = streamUrl;
       audioElement.load();
     }
 
-    // Volume'u ayarla
-    audioElement.volume = volume;
+    // Play/pause mantığı
+    const handlePlayback = async () => {
+      if (isActive && isUserInteracted) {
+        try {
+          // Volume'u tekrar ayarla (mobil uyumluluk için)
+          audioElement.volume = currentVolume;
+          audioElement.muted = currentVolume === 0;
 
-    // Play/pause mantığı - sadece kullanıcı etkileşimi varsa
-    if (isActive && isUserInteracted) {
-      const playPromise = audioElement.play();
-
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
+          if (audioElement.paused) {
+            await audioElement.play();
             setAudioError(null);
-          })
-          .catch((error) => {
-            console.warn("Ses çalınamadı:", error.message);
-            setAudioError("Ses çalınamadı. Sayfa ile etkileşime geçin.");
-          });
+          }
+        } catch (error) {
+          console.warn("Ses çalınamadı:", error);
+          setAudioError("Ses çalınamadı. Sayfa ile etkileşime geçin.");
+        }
+      } else if (!isActive) {
+        if (!audioElement.paused) {
+          audioElement.pause();
+        }
       }
-    } else if (!isActive) {
-      audioElement.pause();
-    }
-  }, [isActive, streamUrl, volume, isUserInteracted]);
+    };
+
+    handlePlayback();
+  }, [isActive, streamUrl, isUserInteracted, currentVolume]);
+
+  // Audio element load eventi
+  useEffect(() => {
+    const audioElement = audioRef.current;
+    if (!audioElement) return;
+
+    const handleLoadedData = () => {
+      // Audio yüklendiğinde volume'u ayarla
+      audioElement.volume = currentVolume;
+      audioElement.muted = currentVolume === 0;
+    };
+
+    audioElement.addEventListener("loadeddata", handleLoadedData);
+
+    return () => {
+      audioElement.removeEventListener("loadeddata", handleLoadedData);
+    };
+  }, [currentVolume]);
 
   return (
     <div className="mt-4">
-      <audio ref={audioRef} loop preload="metadata">
+      <audio
+        ref={audioRef}
+        loop
+        preload="metadata"
+        playsInline
+        controls={false}>
         Tarayıcınız ses öğesini desteklemiyor.
       </audio>
+
+      {/* Volume debug bilgisi (geliştirme için) */}
+      {process.env.NODE_ENV === "development" && (
+        <div className="text-xs text-white/50 text-center mt-1">
+          Volume: {Math.round(currentVolume * 100)}% | Muted:{" "}
+          {currentVolume === 0 ? "Yes" : "No"}
+        </div>
+      )}
 
       {/* Kullanıcı etkileşimi gereksinimi uyarısı */}
       {isActive && !isUserInteracted && (
@@ -88,7 +142,7 @@ const Player = ({ isActive, streamUrl, volume }: PlayerProps) => {
       {/* Ses durumu göstergesi */}
       {isActive && isUserInteracted && !audioError && (
         <div className="text-xs text-green-300 text-center mt-2">
-          🎵 Müzik çalıyor
+          {currentVolume === 0 ? "🔇 Sessiz" : "🎵 Müzik çalıyor"}
         </div>
       )}
     </div>

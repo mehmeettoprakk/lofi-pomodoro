@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import Timer from "@/components/Timer";
 import Player from "@/components/Player";
@@ -31,6 +31,30 @@ const moods = [
   },
 ];
 
+// Mobil cihaz kontrolü
+const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
+
+// Optimized animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: isMobile ? 0.3 : 0.5,
+      staggerChildren: isMobile ? 0.1 : 0.2,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: isMobile ? 10 : 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: isMobile ? 0.3 : 0.5 },
+  },
+};
+
 export default function Home() {
   // Pomodoro hook'unu kullan
   const {
@@ -48,24 +72,29 @@ export default function Home() {
   const [currentVideoMode, setCurrentVideoMode] = useState<
     "waves" | "rain" | "fireplace"
   >(moods[0].videoMode);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(!isMobile); // Mobilde varsayılan kapalı
 
   // New state for features
-  const [volume, setVolume] = useState(0.5); // Volume from 0 to 1
+  const [volume, setVolume] = useState(0.5);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const handleMoodChange = (url: string) => {
-    setCurrentStreamUrl(url);
-    const selectedMood = moods.find((mood) => mood.url === url);
-    if (selectedMood) {
-      setCurrentVideoMode(selectedMood.videoMode);
-    }
-  };
+  const handleMoodChange = useMemo(
+    () => (url: string) => {
+      setCurrentStreamUrl(url);
+      const selectedMood = moods.find((mood) => mood.url === url);
+      if (selectedMood) {
+        setCurrentVideoMode(selectedMood.videoMode);
+      }
+    },
+    []
+  );
 
-  // Duration değiştiğinde hook'u güncelle
-  const handleDurationChange = (newDuration: number) => {
-    updateDuration(newDuration);
-  };
+  const handleDurationChange = useMemo(
+    () => (newDuration: number) => {
+      updateDuration(newDuration);
+    },
+    [updateDuration]
+  );
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen p-4">
@@ -76,12 +105,14 @@ export default function Home() {
       />
 
       {/* Ana container - tek sütun */}
-      <div className="w-full max-w-lg mx-auto space-y-8">
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="w-full max-w-lg mx-auto space-y-8">
         {/* Üst kısım - Header */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          variants={itemVariants}
           className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-white">Pomodoro Focus</h1>
           <div className="flex items-center space-x-2">
@@ -94,10 +125,7 @@ export default function Home() {
         </motion.div>
 
         {/* Timer */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}>
+        <motion.div variants={itemVariants}>
           <Timer
             isActive={isActive}
             toggle={toggleTimer}
@@ -111,9 +139,7 @@ export default function Home() {
 
         {/* Mood ve kontroller */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
+          variants={itemVariants}
           className="bg-black/10 backdrop-blur-md p-6 rounded-lg space-y-4">
           <MoodSelector
             moods={moods}
@@ -131,13 +157,10 @@ export default function Home() {
         </motion.div>
 
         {/* Todo listesi */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}>
+        <motion.div variants={itemVariants}>
           <TodoList />
         </motion.div>
-      </div>
+      </motion.div>
 
       {isSettingsOpen && (
         <SettingsModal

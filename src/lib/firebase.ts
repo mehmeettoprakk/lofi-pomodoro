@@ -34,45 +34,24 @@ export const auth = getAuth(app);
 let currentUserId: string | null = null;
 
 // Anonim giriş yap
-console.log("🟣 Firebase başlatılıyor...");
-console.log("🟣 Firebase config check:", {
-  hasApiKey: !!firebaseConfig.apiKey,
-  hasAuthDomain: !!firebaseConfig.authDomain,
-  hasProjectId: !!firebaseConfig.projectId,
-});
-
 signInAnonymously(auth)
   .then((userCredential) => {
-    console.log("✅ Anonim kullanıcı girişi başarılı");
-    console.log("✅ User credential:", userCredential);
-    console.log("✅ User UID:", userCredential.user.uid);
+    // Production'da log kaldırıldı
   })
   .catch((error) => {
     console.error("❌ Anonim giriş hatası:", error);
-    console.error("❌ Error code:", error.code);
-    console.error("❌ Error message:", error.message);
   });
 
 // UID takibi
 onAuthStateChanged(auth, (user) => {
-  console.log(
-    "🔶 Auth state changed:",
-    user ? "User logged in" : "User logged out"
-  );
   if (user) {
-    console.log("🔶 User UID:", user.uid);
-    console.log("🔶 User details:", user);
     currentUserId = user.uid;
 
     // Client-side kontrolü
     if (typeof window !== "undefined" && window.localStorage) {
       localStorage.setItem("firebaseAnonUid", currentUserId);
-      console.log("🔶 UID saved to memory and localStorage");
-    } else {
-      console.log("🔶 UID saved to memory only (server-side)");
     }
   } else {
-    console.log("🔶 No user, clearing UID");
     currentUserId = null;
   }
 });
@@ -83,11 +62,6 @@ export const getCurrentUserId = (): string | null => {
     typeof window !== "undefined" && window.localStorage
       ? localStorage.getItem("firebaseAnonUid")
       : null;
-
-  console.log("🟨 getCurrentUserId çağrıldı:");
-  console.log("🟨 - Memory'den:", fromMemory);
-  console.log("🟨 - LocalStorage'dan:", fromStorage);
-  console.log("🟨 - Auth current user:", auth.currentUser?.uid);
 
   return fromMemory || fromStorage;
 };
@@ -145,11 +119,8 @@ export const subscribeToTask = (
 
 // Todo Task ekle
 export const addTodoTask = async (title: string): Promise<string | null> => {
-  console.log("🟦 addTodoTask çağrıldı, title:", title);
-
   try {
     const userId = getCurrentUserId();
-    console.log("🟦 getCurrentUserId sonucu:", userId);
 
     if (!userId) {
       console.error("❌ Kullanıcı kimliği alınamadı");
@@ -164,20 +135,10 @@ export const addTodoTask = async (title: string): Promise<string | null> => {
       userId,
     };
 
-    console.log("🟦 Eklenecek görev objesi:", newTask);
-    console.log("🟦 Firebase db objesi:", db);
-
     const docRef = await addDoc(collection(db, "todos"), newTask);
-    console.log("✅ Firestore'a ekleme başarılı, doc ID:", docRef.id);
-
     return docRef.id;
   } catch (error) {
-    console.error("❌ Todo ekleme hatası detayı:", error);
-    console.error("❌ Hata tipi:", typeof error);
-    console.error(
-      "❌ Hata mesajı:",
-      error instanceof Error ? error.message : String(error)
-    );
+    console.error("❌ Todo ekleme hatası:", error);
     return null;
   }
 };
