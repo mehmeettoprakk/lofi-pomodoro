@@ -54,7 +54,7 @@ const TodoList = () => {
     try {
       const result = await addTodoTask(newTaskTitle.trim());
       console.log("✅ Görev ekleme sonucu:", result);
-      
+
       if (result) {
         setNewTaskTitle("");
         console.log("✅ Input temizlendi");
@@ -132,7 +132,7 @@ const TodoList = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${
+              className={`flex items-start gap-3 p-3 rounded-lg border transition-all duration-200 min-w-0 ${
                 task.completed
                   ? "bg-white/5 border-white/20"
                   : "bg-white/10 border-white/30"
@@ -149,16 +149,17 @@ const TodoList = () => {
               </button>
 
               {/* Görev metni */}
-              <span
-                className={`flex-1 text-sm transition-all duration-200 ${
+              <div
+                className={`flex-1 text-sm transition-all duration-200 break-words hyphens-auto min-w-0 ${
                   task.completed ? "text-white/50 line-through" : "text-white"
-                }`}>
+                }`}
+                style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
                 {task.title}
-              </span>
+              </div>
 
               {/* Pomodoro sayısı */}
               {(task.pomodoroCount || 0) > 0 && (
-                <span className="text-xs bg-white/20 text-white/70 px-2 py-1 rounded-full">
+                <span className="text-xs bg-white/20 text-white/70 px-2 py-1 rounded-full flex-shrink-0">
                   🍅 {task.pomodoroCount}
                 </span>
               )}
@@ -166,7 +167,7 @@ const TodoList = () => {
               {/* Silme */}
               <button
                 onClick={() => handleDeleteTask(task.id)}
-                className="flex-shrink-0 text-white/40 hover:text-red-400 transition-colors">
+                className="flex-shrink-0 text-white/40 hover:text-red-400 transition-colors p-1">
                 <Trash2 size={16} />
               </button>
             </motion.div>
