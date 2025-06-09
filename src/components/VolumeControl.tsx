@@ -58,17 +58,17 @@ const VolumeControl = ({ volume, onVolumeChange }: VolumeControlProps) => {
   };
 
   return (
-    <div className="flex items-center justify-center gap-3 w-full max-w-sm mx-auto mt-4">
+    <div className="flex items-center justify-between gap-3 w-full max-w-sm mx-auto mt-4 px-2">
       {/* Volume icon - tıklanabilir */}
       <button
         onClick={handleIconClick}
-        className="text-white/70 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
+        className="text-white/70 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10 flex-shrink-0"
         aria-label={volume === 0 ? "Sesi aç" : "Sesi kapat"}>
         <VolumeIcon className="w-5 h-5" />
       </button>
 
       {/* Volume slider */}
-      <div className="relative flex-1">
+      <div className="flex-1 min-w-0 px-2">
         <input
           type="range"
           min="0"
@@ -91,11 +91,11 @@ const VolumeControl = ({ volume, onVolumeChange }: VolumeControlProps) => {
             }%, rgba(255,255,255,0.2) 100%)`,
           }}
         />
+      </div>
 
-        {/* Volume yüzdesi göstergesi */}
-        <div className="text-xs text-white/60 text-center mt-1">
-          {Math.round(volume * 100)}%
-        </div>
+      {/* Volume yüzdesi göstergesi */}
+      <div className="text-xs text-white/60 flex-shrink-0 min-w-[35px] text-right">
+        {Math.round(volume * 100)}%
       </div>
 
       {/* CSS styles */}

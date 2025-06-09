@@ -140,7 +140,7 @@ export default function BackgroundVideo({
     return (
       <button
         onClick={onToggle}
-        className="fixed top-6 right-6 z-50 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 text-white border border-white/20 shadow-lg"
+        className="fixed top-6 left-6 z-50 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 text-white border border-white/20 shadow-lg"
         title="Arka plan videosunu aç">
         <Video className="w-6 h-6" />
       </button>
@@ -178,7 +178,7 @@ export default function BackgroundVideo({
         onClick={onToggle}
         className={`fixed z-50 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 text-white border border-white/20 shadow-lg hover:scale-110 group ${
           isMobileDevice
-            ? "top-6 right-6" // Mobilde üst sağ köşe
+            ? "top-6 left-6" // Mobilde sol üst köşe
             : "bottom-6 right-6" // Desktop'ta alt sağ köşe
         }`}
         title={
