@@ -59,7 +59,7 @@ const VolumeControl = ({ volume, onVolumeChange }: VolumeControlProps) => {
 
   return (
     <div className="flex items-center justify-between gap-3 w-full max-w-sm mx-auto mt-4 px-2">
-      {/* Volume icon - tıklanabilir */}
+      {/* Volume icon */}
       <button
         onClick={handleIconClick}
         className="text-white/70 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10 flex-shrink-0"

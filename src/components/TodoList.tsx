@@ -18,7 +18,7 @@ const TodoList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [uidReady, setUidReady] = useState(false);
 
-  // 🔐 UID gelene kadar bekle - optimize edilmiş
+  // 🔐 UID gelene kadar bekle 
   useEffect(() => {
     let mounted = true;
 
@@ -42,7 +42,7 @@ const TodoList = () => {
     };
   }, []);
 
-  // ✅ UID geldikten sonra görevleri dinle
+  //UID geldikten sonra görevleri dinle
   useEffect(() => {
     if (!uidReady) return;
 
